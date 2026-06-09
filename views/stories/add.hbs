@@ -1,4 +1,11 @@
-<h3>Add Story</h3>
+<h3>
+    Add Story
+    <button type="button" id="magic-wand" class="btn-floating waves-effect waves-light purple"
+        title="AI 幫我生成故事" style="margin-left: 12px;">
+        <i class="fas fa-magic"></i>
+    </button>
+    <span id="magic-status" style="margin-left: 8px; color: #888; font-size: 14px;"></span>
+</h3>
 <div class="row">
     <form action="/stories" method="POST" class="col s12">
         <div class="row">
@@ -31,3 +38,45 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.getElementById('magic-wand').addEventListener('click', async function () {
+        const btn = this
+        const status = document.getElementById('magic-status')
+        const icon = btn.querySelector('i')
+
+        btn.disabled = true
+        icon.className = 'fas fa-spinner fa-spin'
+        status.textContent = 'AI 構思中…'
+
+        try {
+            const res = await fetch('/stories/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+            const json = await res.json()
+
+            if (!json.success) {
+                status.textContent = '生成失敗：' + (json.error || '未知錯誤')
+                return
+            }
+
+            document.getElementById('title').value = json.data.title
+            M.updateTextFields()
+
+            if (window.CKEDITOR && CKEDITOR.instances.body) {
+                CKEDITOR.instances.body.setData(json.data.body)
+            } else {
+                document.getElementById('body').value = json.data.body
+            }
+
+            status.textContent = '已生成 ✨'
+            setTimeout(() => { status.textContent = '' }, 3000)
+        } catch (err) {
+            status.textContent = '網路錯誤'
+        } finally {
+            btn.disabled = false
+            icon.className = 'fas fa-magic'
+        }
+    })
+</script>
