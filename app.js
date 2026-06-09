@@ -24,6 +24,11 @@ connectDB();
 
 const app = express();
 
+// Trust first proxy (Render / Cloudflare / etc.) so req.protocol reflects HTTPS
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Body parser
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -72,9 +77,12 @@ app.engine(
 app.set('view engine', '.hbs');
 
 // Sessions
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET is not set. Add it to your .env or platform env vars.');
+}
 app.use(
   session({
-    secret: 'keyboard cat',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
